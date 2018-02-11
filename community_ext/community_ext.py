@@ -713,7 +713,7 @@ def model_log_likelihood(graph,part_init,model,weight='weight',pars=None): #,fix
         result -= E*pout
         result -= E*log(2.*E)
         return result
-    elif model in ('ilfr', 'lfr'):
+    elif model in ('ilfr', 'ilfrs'):
         if not pars.get('mu',None): # is None:
             return __modularity(status,model=model,pars={'mu':estimate_mu(graph,part_init)})
         else:
