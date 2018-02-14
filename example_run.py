@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
-import sys
 import community_ext
 import networkx as nx
-from collections import defaultdict
-import scipy
-from math import log
 
 fn1 = "datasets/polblogs/polblogs.edges"
 fn2 = fn1.replace(".edges",".clusters")
