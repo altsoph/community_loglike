@@ -773,7 +773,15 @@ def estimate_gamma(graph,part_init,weight='weight',model='ppm',pars=None): #fixe
         if Pout == 0.: Pout = __MIN
         return P2 * (Pin - Pout) / (E * (log(Pin) - log(Pout)))
 
-def estimate_mu(graph,partition,current_mu=None,model=None,weight='weight'):
+def estimate_mu(graph,partition):
+    Eout = 0
+    Gsize = graph.size()
+    for n1,n2 in graph.edges_iter(): #links:
+        if partition[n1] != partition[n2]: 
+            Eout += 1
+    return float(Eout)/Gsize
+
+def ilfr_mu_loglikelihood(graph,partition,current_mu=None,model=None,weight='weight'):
     if model == 'ilfr':
         current_graph = graph.copy()
         status = Status()
@@ -789,12 +797,7 @@ def estimate_mu(graph,partition,current_mu=None,model=None,weight='weight'):
             if degree>0:
                 res_mu += in_degree*log(((1.-current_mu)/degree)+current_mu/(2.*E))/2.
         return res_mu
-    Eout = 0
-    Gsize = graph.size()
-    for n1,n2 in graph.edges_iter(): #links:
-        if partition[n1] != partition[n2]: 
-            Eout += 1
-    return float(Eout)/Gsize
+    return None
 
 def _eta(data):
     if len(data) <= 1: return 0
