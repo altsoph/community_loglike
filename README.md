@@ -7,7 +7,7 @@ Originally based on the code of [community aka python-louvain library from Thoma
 
 ## Methods
 We provide several different models, so the likelihood of a graph partition under the given model could be used as a target quality function to optimize.
-The optimization process itself is a standard greedy Louvain algorithm. The 
+The optimization process itself is a standard greedy Louvain algorithm.
 
 The following models are implemented:
   * PPM: Planted Partition Model (particular case of Stochastic Block Model) having two parameters p_in and p_out;
