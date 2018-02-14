@@ -87,7 +87,8 @@ def modularity(partition, graph, weight='weight',gamma = 1.):
        the networkx graph which is decomposed
     weight : str, optional
         the key in graph to use as weight. Default to 'weight'
-
+    gamma : float
+       a granularity parameter for the modularity
 
     Returns
     -------
@@ -111,7 +112,7 @@ def modularity(partition, graph, weight='weight',gamma = 1.):
     Examples
     --------
     >>> G=nx.erdos_renyi_graph(100, 0.01)
-    >>> part = best_partition(G)
+    >>> part = best_partition(G, model = 'ppm')
     >>> modularity(part, G)
     """
     if graph.is_directed():
@@ -141,8 +142,8 @@ def modularity(partition, graph, weight='weight',gamma = 1.):
     return res
 
 
-def best_partition(graph, partition=None,
-                   weight='weight', resolution=1., randomize=False, model='ppm', pars = None):
+def best_partition(graph, model=None, partition=None,
+                   weight='weight', resolution=1., randomize=False, pars = None):
     assert model in ('dcppm','ppm','ilfr','ilfrs'), "Unknown model specified"
     """Compute the partition of the graph nodes which maximises the modularity
     (or try..) using the Louvain heuristices
@@ -154,6 +155,8 @@ def best_partition(graph, partition=None,
     ----------
     graph : networkx.Graph
        the networkx graph which is decomposed
+    model : string
+       should be 'ilfr', 'ilfrs', 'ppm' or 'dcppm'
     partition : dict, optional
        the algorithm will start using this partition of the nodes.
        It's a dictionary where keys are their nodes and values the communities
@@ -167,10 +170,16 @@ def best_partition(graph, partition=None,
     randomize :  boolean, optional
         Will randomize the node evaluation order and the community evaluation
         order to get different partitions at each call
+    pars : dict, optional
+       the dict with 'mu' or 'gamma' key and a float value.
+       Use 'mu' within (0,1) for 'ilfr' and 'ilfrs' models and
+       'gamma' within (0,inf) for 'ppm' and 'dcppm' models.
+       Also, for 'ppm' model it's possible to use two optional parameters, 
+       fixedPin and fixedPout, they could be used to modify the gamma calculation.
 
     Returns
     -------
-    partition : dictionnary
+    partition : dictionary
        The partition, with communities numbered from 0 to number of communities
 
     Raises
@@ -195,14 +204,14 @@ def best_partition(graph, partition=None,
     --------
     >>>  #Basic usage
     >>> G=nx.erdos_renyi_graph(100, 0.01)
-    >>> part = best_partition(G)
+    >>> part = best_partition(G, model='ppm')
 
     >>> #other example to display a graph with its community :
     >>> #better with karate_graph() as defined in networkx examples
     >>> #erdos renyi don't have true community structure
     >>> G = nx.erdos_renyi_graph(30, 0.05)
     >>> #first compute the best partition
-    >>> partition = community.best_partition(G)
+    >>> partition = best_partition(G, model='ppm')
     >>>  #drawing
     >>> size = float(len(set(partition.values())))
     >>> pos = nx.spring_layout(G)
@@ -217,21 +226,21 @@ def best_partition(graph, partition=None,
     >>> plt.show()
     """
     dendo = generate_dendrogram(graph,
+                                model,
                                 partition,
                                 weight,
                                 resolution,
                                 randomize,
-                                model=model,
                                 pars=pars)
     return partition_at_level(dendo, len(dendo) - 1)
 
 
 def generate_dendrogram(graph,
+                        model=None,
                         part_init=None,
                         weight='weight',
                         resolution=1.,
                         randomize=False,
-                        model='ppm',
                         pars = None):
     """Find communities in the graph and return the associated dendrogram
 
@@ -245,6 +254,8 @@ def generate_dendrogram(graph,
     ----------
     graph : networkx.Graph
         the networkx graph which will be decomposed
+    model : string
+       should be 'ilfr', 'ilfrs', 'ppm' or 'dcppm'
     part_init : dict, optional
         the algorithm will start using this partition of the nodes. It's a
         dictionary where keys are their nodes and values the communities
@@ -255,6 +266,12 @@ def generate_dendrogram(graph,
         represents the time described in
         "Laplacian Dynamics and Multiscale Modular Structure in Networks",
         R. Lambiotte, J.-C. Delvenne, M. Barahona
+    pars : dict, optional
+       the dict with 'mu' or 'gamma' key and a float value.
+       Use 'mu' within (0,1) for 'ilfr' and 'ilfrs' models and
+       'gamma' within (0,inf) for 'ppm' and 'dcppm' models.
+       Also, for 'ppm' model it's possible to use two optional parameters, 
+       fixedPin and fixedPout, they could be used to modify the gamma calculation.
 
     Returns
     -------
@@ -283,7 +300,7 @@ def generate_dendrogram(graph,
     Examples
     --------
     >>> G=nx.erdos_renyi_graph(100, 0.01)
-    >>> dendo = generate_dendrogram(G)
+    >>> dendo = generate_dendrogram(G, model='ppm')
     >>> for level in range(len(dendo) - 1) :
     >>>     print("partition at level", level,
     >>>           "is", partition_at_level(dendo, level))
@@ -395,6 +412,8 @@ def __renumber(dictionary):
     return ret
 
 def __transit(partition,rawnodepart):
+    """Map partition of partition to the partition of original nodes
+    """
     res = dict()
     for n,mn in rawnodepart.items():
         res[n] = partition[mn]
@@ -425,7 +444,6 @@ def load_binary(data):
         neighbors = links[prec_deg:last_deg]
         graph.add_edges_from([(index, int(neigh)) for neigh in neighbors])
         prec_deg = last_deg
-
     return graph
 
 
@@ -440,6 +458,8 @@ def __randomly(seq, randomize):
 
 
 def __get_safe_par(model,pars=None):
+    """ Make sure "mu" par is in (0,1) and "gamma" par is in (0,inf)
+    """
     if not pars: 
         par = 1.-__MIN
     else:
@@ -600,9 +620,13 @@ def __insert(node, com, weight, status):
 
 
 def __get_DLD(status):
+    """ Some intermediate optimization
+    """
     return sum(map(lambda x:x*log(x),filter(lambda x:x>0,status.rawnode2degree.values())))
 
 def __get_es(status):
+    """ Some intermediate optimization
+    """
     E = float(status.total_weight)
     Ein = 0
     degrees_squared = 0.
@@ -614,6 +638,8 @@ def __get_es(status):
     return E,Ein,Eout,degrees_squared
 
 def __get_SUMDC2_P2in(status):
+    """ Some intermediate optimization
+    """
     DC = defaultdict(int)
     VC = defaultdict(int)
     for n,mn in status.rawnode2node.items():
@@ -626,16 +652,26 @@ def __get_SUMDC2_P2in(status):
         P2in += VC[c]*(VC[c]-1)/2.
     return SUMDC2,P2in
 
+def __get_pin_pout(status):
+    """ Some intermediate optimization
+    """
+    E,Ein,Eout,degrees_squared = __get_es(status)
+    SUMDC2,P2in = __get_SUMDC2_P2in(status)
+    Pin = 4.*Ein*E/SUMDC2
+    if Eout == 0:
+        Pout = __MIN
+    else:
+        Pout = 4.*Eout*E/(4.*E*E-SUMDC2)
+    return Pin,Pout,E,Ein,Eout,degrees_squared,SUMDC2,P2in
+
 def __modularity(status,model='ppm',pars = None):
     """
-    Fast compute the modularity of the partition of the graph using
+    Fast compute the log likelihood of the partition of the graph using
     status precomputed
     """
     par = __get_safe_par(model,pars)
     if not pars: pars = {}
     if model=='dcppm':
-        # print(model,"!")
-        # par = pars.get('gamma',1.)
         links = float(status.total_weight)
         result = 0.
         for community in set(status.node2com.values()):
@@ -645,7 +681,6 @@ def __modularity(status,model='ppm',pars = None):
                 result += in_degree / links - par *   ((degree / (2. * links)) ** 2)
         return result
     elif model == 'ilfrs':
-        # par = pars.get('mu',1.)
         E,Ein,Eout,_ = __get_es(status)
         result = 0.
         par = max(par,__MIN)
@@ -661,7 +696,6 @@ def __modularity(status,model='ppm',pars = None):
         result += __get_DLD(status)
         return result
     elif model == 'ilfr':
-        # par = pars.get('mu',1.)
         E,_,Eout,_ = __get_es(status)
         DLD = __get_DLD(status)
         par = max(par,__MIN)
@@ -672,7 +706,6 @@ def __modularity(status,model='ppm',pars = None):
                 logl += status.internals.get(community, 0.)*log(((1.-par)/degree)+float(par)/(2.*E))
         return logl
     else:
-        # par = pars.get('gamma',1.)
         E,Ein,Eout,_ = __get_es(status)
         _,P2in = __get_SUMDC2_P2in(status)        
         P2 = len(status.rawnode2node)
@@ -682,17 +715,39 @@ def __modularity(status,model='ppm',pars = None):
         P2out = max(P2out,__MIN)
         return (Ein - par*P2in*E/P2)/E
 
-def __get_pin_pout(status):
-    E,Ein,Eout,degrees_squared = __get_es(status)
-    SUMDC2,P2in = __get_SUMDC2_P2in(status)
-    Pin = 4.*Ein*E/SUMDC2
-    if Eout == 0:
-        Pout = __MIN
-    else:
-        Pout = 4.*Eout*E/(4.*E*E-SUMDC2)
-    return Pin,Pout,E,Ein,Eout,degrees_squared,SUMDC2,P2in
+def model_log_likelihood(graph,part_init,model,weight='weight',pars=None):
+    """ Estimate log likelihood of the given partition of the graph considering the given model 
+    and model's parameter value.
 
-def model_log_likelihood(graph,part_init,model,weight='weight',pars=None): #,fixedPin=None,fixedPout=None):
+    Parameters
+    ----------
+    graph : networkx.Graph
+       the networkx graph which is decomposed
+    part_init : dict
+       the partition of the nodes, i.e a dictionary where keys are their nodes
+       and values the communities
+    model : string
+       should be 'ilfr', 'ilfrs', 'ppm' or 'dcppm'
+    pars : dict
+       the dict with 'mu' or 'gamma' key and a float value.
+       Use 'mu' within (0,1) for 'ilfr' and 'ilfrs' models and
+       'gamma' within (0,inf) for 'ppm' and 'dcppm' models.
+       Also, for 'ppm' model it's possible to use two optional parameters, 
+       fixedPin and fixedPout, they could be used to modify the gamma calculation.
+    weight : str, optional
+       the key in graph to use as weight. Default to 'weight'
+
+    Returns
+    -------
+    r : float
+       log likelihood of the given partition considering the graph, the model and its parameter
+
+    Examples
+    --------
+    >>> G=nx.erdos_renyi_graph(100, 0.01)
+    >>> partition = best_partition(G, model='ppm', pars={'gamma':0.5})
+    >>> model_log_likelihood(G,partition,model='ppm',pars={'gamma':0.5})
+    """
     current_graph = graph.copy()
     status = Status()
     status.init(current_graph, weight, part_init)
@@ -700,7 +755,6 @@ def model_log_likelihood(graph,part_init,model,weight='weight',pars=None): #,fix
     par = __get_safe_par(model,pars)    
     if not pars: pars = {}
     if model == 'dcppm':
-        # par = pars.get('gamma',1.)        
         pin,pout,E,Ein,Eout,degrees_squared,_,_ = __get_pin_pout(status)
         DLD = __get_DLD(status)
         result = 0.
@@ -708,7 +762,7 @@ def model_log_likelihood(graph,part_init,model,weight='weight',pars=None): #,fix
         pout = max(pout,__MIN)
         result += Ein*(log(pin)-log(pout))
         result -= (pin-pout)*degrees_squared/(4.*E)
-        result += DLD # = __GRAPH_DEGREES_PREC
+        result += DLD 
         result += E*log(pout)
         result -= E*pout
         result -= E*log(2.*E)
@@ -719,7 +773,6 @@ def model_log_likelihood(graph,part_init,model,weight='weight',pars=None): #,fix
         else:
             return __modularity(status,model=model,pars=pars)
     elif model == 'ppm':
-        # par = pars.get('gamma',1.)        
         E,Ein,Eout,_ = __get_es(status)
         _,P2in = __get_SUMDC2_P2in(status)
         P2 = len(status.rawnode2node)
@@ -730,10 +783,10 @@ def model_log_likelihood(graph,part_init,model,weight='weight',pars=None): #,fix
         Pin = Ein/P2in
         Pout = Eout/P2out
         ext_mod = -Eout - Ein
-        if 'fixedPin' in pars: #is not None: 
+        if 'fixedPin' in pars: 
             Pin = pars['fixedPin']
             ext_mod += Ein - P2in*pars['fixedPin']
-        if 'fixedPout' in pars: #is not None: 
+        if 'fixedPout' in pars: 
             Pout = pars['fixedPout']
             ext_mod += Eout - P2out*pars['fixedPout']
         if Ein > 0.:
@@ -742,7 +795,36 @@ def model_log_likelihood(graph,part_init,model,weight='weight',pars=None): #,fix
             ext_mod += Eout*log(Pout)
         return ext_mod
 
-def estimate_gamma(graph,part_init,weight='weight',model='ppm',pars=None): #fixedPin=None,fixedPout=None):
+def estimate_gamma(graph,part_init,weight='weight',model='ppm',pars=None):
+    """ Estimate the best gamma value given the model ("ppm" or "dcppm"), 
+    the graph, its partition and some optional parameters.
+
+    Parameters
+    ----------
+    graph : networkx.Graph
+       the networkx graph which is decomposed
+    part_init : dict
+       the partition of the nodes, i.e a dictionary where keys are their nodes
+       and values the communities
+    model : string
+       should be 'ppm' or 'dcppm'
+    weight : str, optional
+       the key in graph to use as weight. Default to 'weight'
+    pars : dict, optional
+       the dict with two optional parameters for 'ppm' model, 
+       fixedPin and fixedPout, could be used to modify the gamma calculation.
+
+    Returns
+    -------
+    r : float
+       the estimation of the gamma value considering the graph and its partition
+
+    Examples
+    --------
+    >>> G=nx.erdos_renyi_graph(100, 0.01)
+    >>> partition = best_partition(G, model='ppm', pars={'gamma':0.5})
+    >>> estimate_gamma(G, partition, model='ppm')
+    """
     current_graph = graph.copy()
     status = Status()
     status.init(current_graph, weight, part_init)
@@ -763,17 +845,37 @@ def estimate_gamma(graph,part_init,weight='weight',model='ppm',pars=None): #fixe
         P2out = max(P2out,__MIN)
         Pin = Ein/P2in
         Pout = Eout/P2out
-        # if fixedPin is not None: Pin = fixedPin
-        # if fixedPout is not None: Pout = fixedPout
-        if 'fixedPin' in pars: #is not None: 
+        if 'fixedPin' in pars:
             Pin = pars['fixedPin']
-        if 'fixedPout' in pars: #is not None: 
+        if 'fixedPout' in pars:
             Pout = pars['fixedPout']
         if Pin == 0.: Pin = __MIN
         if Pout == 0.: Pout = __MIN
         return P2 * (Pin - Pout) / (E * (log(Pin) - log(Pout)))
 
 def estimate_mu(graph,partition):
+    """ Estimate the best mu value given the graph and its partition,
+    should be used for the "ilfrs" model
+
+    Parameters
+    ----------
+    graph : networkx.Graph
+       the networkx graph which is decomposed
+    partition : dict
+       the partition of the nodes, i.e a dictionary where keys are their nodes
+       and values the communities
+
+    Returns
+    -------
+    r : float
+       the estimation of the mu value considering the graph and its partition
+
+    Examples
+    --------
+    >>> G=nx.erdos_renyi_graph(100, 0.01)
+    >>> partition = best_partition(G, model='ilfrs', pars={'mu':0.5})
+    >>> estimate_mu(G, partition)
+    """
     Eout = 0
     Gsize = graph.size()
     for n1,n2 in graph.edges_iter(): #links:
@@ -782,6 +884,34 @@ def estimate_mu(graph,partition):
     return float(Eout)/Gsize
 
 def ilfr_mu_loglikelihood(graph,partition,current_mu=None,model=None,weight='weight'):
+    """ Compute log likelihood for the given mu value considering 
+    the graph and the partition.
+
+    Parameters
+    ----------
+    graph : networkx.Graph
+       the networkx graph which is decomposed
+    partition : dict
+       the partition of the nodes, i.e a dictionary where keys are their nodes
+       and values the communities
+    current_mu : float
+       the given value of the mu parameter
+    model : string
+       should always be 'ilfr', this parameter added for unification
+    weight : str, optional
+        the key in graph to use as weight. Default to 'weight'
+
+    Returns
+    -------
+    r : float
+       log likelihood of the given mu value considering the graph and its partition
+
+    Examples
+    --------
+    >>> G=nx.erdos_renyi_graph(100, 0.01)
+    >>> partition = best_partition(G, model='ilfr', pars={'mu':0.5})
+    >>> ilfr_mu_loglikelihood(G, partition, 0.5, model='ilfr')
+    """
     if model == 'ilfr':
         current_graph = graph.copy()
         status = Status()
@@ -800,6 +930,8 @@ def ilfr_mu_loglikelihood(graph,partition,current_mu=None,model=None,weight='wei
     return None
 
 def _eta(data):
+    """ Compute eta for NMI calculation
+    """
     if len(data) <= 1: return 0
     _exp = exp(1)
     counts = Counter()
@@ -814,6 +946,8 @@ def _eta(data):
     return ent
 
 def _nmi(x, y):
+    """ Calculate NMI without including extra libraries
+    """
     sum_mi = 0.0
     x_value_list = list(set(x))
     y_value_list = list(set(y))
@@ -850,6 +984,30 @@ def _nmi(x, y):
     return sum_mi/sqrt(_eta(x)*_eta(y))
 
 def compare_partitions(p1,p2):
+    """Compute three metrics of two partitions similarity:
+      * Rand index
+      * Jaccard index
+      * NMI 
+
+    Parameters
+    ----------
+    p1 : dict
+       a first partition
+    p2 : dict
+       a second partition
+
+    Returns
+    -------
+    r : dict
+       with keys 'rand', 'jaccard', 'nmi'
+
+    Examples
+    --------
+    >>> G=nx.erdos_renyi_graph(100, 0.01)
+    >>> part1 = best_partition(G, model='ppm', pars={'gamma':0.5})
+    >>> part2 = best_partition(G, model='dcppm', pars={'gamma':0.5})
+    >>> compare_partitions(part1, part2)
+    """
     p1_sets = defaultdict(set)
     p2_sets = defaultdict(set)
     [p1_sets[item[1]].add(item[0]) for item in p1.items()]
