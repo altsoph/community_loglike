@@ -16,6 +16,7 @@ from .community_ext import (
     load_binary,
     estimate_gamma,
     estimate_mu,
+    ilfr_mu_loglikelihood,
     compare_partitions,
     model_log_likelihood
 )
