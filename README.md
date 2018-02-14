@@ -51,7 +51,7 @@ Here is the list of the most important functions with brief comments on them:
 ## Datasets 
 We also included several real world datasets with the known ground truth partitions, namely:
   * datasets/**karate** (Wayne W Zachary. 1977. An information flow model for conflict and fission in small groups),
-  * datasets/**doplphins** (David Lusseau, Karsten Schneider, Oliver J Boisseau, Patti Haase, Elisabeth Slooten, and Steve M Dawson. 2003. The bottlenose dolphin community of Doubtful Sound features a large proportion of long-lasting associations. Behavioral Ecology and Sociobiology 54, 4 (2003), 396–405.),
+  * datasets/**dolphins** (David Lusseau, Karsten Schneider, Oliver J Boisseau, Patti Haase, Elisabeth Slooten, and Steve M Dawson. 2003. The bottlenose dolphin community of Doubtful Sound features a large proportion of long-lasting associations. Behavioral Ecology and Sociobiology 54, 4 (2003), 396–405.),
   * datasets/**football** (Mark EJ Newman and Michelle Girvan. 2004. Finding and evaluating community structure in networks. Physical review E 69, 2 (2004), 026113),
   * datasets/**polbooks** (Mark EJ Newman. 2006. Modularity and community structure in networks. Proceedings of the national academy of sciences 103, 23 (2006), 8577–8582),
   * datasets/**polblogs** (Lada A Adamic and Natalie Glance. 2005. The political blogosphere and the 2004 US election: divided they blog. In Proceedings of the 3rd international workshop on Link discovery. ACM, 36–43),
