@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
+from __future__ import print_function
 import community_ext
 import networkx as nx
 import scipy
@@ -12,7 +13,7 @@ def opt_mu(G,partition,mu):
 
 fn1 = "datasets/polblogs/polblogs.edges"
 fn2 = fn1.replace(".edges",".clusters")
-print "DATASET:",fn1
+print("DATASET:",fn1)
 
 # load graph
 G = nx.Graph()
@@ -30,12 +31,12 @@ for line in open(fn2):
 
 # print some general info
 gt_mu = community_ext.estimate_mu(G,groundtruth_partition)
-print "ground truth mu\t",gt_mu
-print "ground truth clusters\t",len(set(groundtruth_partition.values()))
-print "ground truth modularity\t", community_ext.modularity(groundtruth_partition,G)
+print("ground truth mu\t",gt_mu)
+print("ground truth clusters\t",len(set(groundtruth_partition.values())))
+print("ground truth modularity\t", community_ext.modularity(groundtruth_partition,G))
 
 method = 'ilfr'
-print '\nMethod', method
+print('\nMethod', method)
 
 # a starting parameter value depends on the method
 work_par = 0.5
@@ -59,11 +60,11 @@ while abs(work_par-prev_par)>1e-5: # stop if the size of improvement too small
     work_par = opt_mu(G,partition,community_ext.estimate_mu(G,partition))
 
     loglike =   community_ext.model_log_likelihood(G,partition,model=method,pars={'gamma':work_par,'mu':work_par})
-    print 'current par',work_par,'loglike',loglike
+    print('current par',work_par,'loglike',loglike)
 
 # calculate and print the scores of resulting partition
 part_scores = community_ext.compare_partitions(groundtruth_partition,partition)
 loglike =   community_ext.model_log_likelihood(G,partition,model=method,pars={'gamma':work_par,'mu':work_par})
-print 'best par',work_par
-print "rand\t% 0f\tjaccard\t% 0f\tnmi\t% 0f\tsize\t%d\tloglike\t% 0f" %\
-        (part_scores['rand'], part_scores['jaccard'], part_scores['nmi'], len(set(partition.values())), loglike)
+print('best par',work_par)
+print("rand\t% 0f\tjaccard\t% 0f\tnmi\t% 0f\tsize\t%d\tloglike\t% 0f" %\
+        (part_scores['rand'], part_scores['jaccard'], part_scores['nmi'], len(set(partition.values())), loglike))

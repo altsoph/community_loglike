@@ -78,7 +78,7 @@ class Status(object):
         self.total_weight = graph.size(weight=weight)
         count = 0
         if part is None:
-            for node in graph.nodes():
+            for node in sorted(graph.nodes()):
                 if raw_partition is None:
                     self.rawnode2node[node] = node
                 self.node2com[node] = count

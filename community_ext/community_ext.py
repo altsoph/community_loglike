@@ -383,12 +383,12 @@ def induced_graph(partition, graph, weight="weight"):
     ret = nx.Graph()
     ret.add_nodes_from(partition.values())
 
-    for node1, node2, datas in graph.edges_iter(data=True):
+    for node1, node2, datas in graph.edges(data=True):
         edge_weight = datas.get(weight, 1)
         com1 = partition[node1]
         com2 = partition[node2]
         w_prec = ret.get_edge_data(com1, com2, {weight: 0}).get(weight, 1)
-        ret.add_edge(com1, com2, attr_dict={weight: w_prec + edge_weight})
+        ret.add_edge(com1, com2, weight = w_prec + edge_weight)
 
     return ret
 
@@ -454,7 +454,7 @@ def __randomly(seq, randomize):
         shuffled = list(seq)
         random.shuffle(shuffled)
         return iter(shuffled)
-    return seq
+    return sorted(seq)
 
 
 def __get_safe_par(model,pars=None):
@@ -878,7 +878,7 @@ def estimate_mu(graph,partition):
     """
     Eout = 0
     Gsize = graph.size()
-    for n1,n2 in graph.edges_iter(): #links:
+    for n1,n2 in graph.edges(): #links:
         if partition[n1] != partition[n2]: 
             Eout += 1
     return float(Eout)/Gsize
@@ -932,12 +932,15 @@ def ilfr_mu_loglikelihood(graph,partition,current_mu=None,model=None,weight='wei
 def _eta(data):
     """ Compute eta for NMI calculation
     """
-    if len(data) <= 1: return 0
+    # if len(data) <= 1: return 0
+    ldata = len(list(data))
+    if ldata <= 1: return 0
     _exp = exp(1)
     counts = Counter()
     for d in data:
         counts[d] += 1
-    probs = [float(c) / len(data) for c in counts.values()]
+    # probs = [float(c) / len(data) for c in counts.values()]
+    probs = [float(c) / ldata for c in counts.values()]
     probs = [p for p in probs if p > 0.]
     ent = 0
     for p in probs:
@@ -948,17 +951,23 @@ def _eta(data):
 def _nmi(x, y):
     """ Calculate NMI without including extra libraries
     """
+    # print(x,y)
+    # print(list(x))
     sum_mi = 0.0
     x_value_list = list(set(x))
     y_value_list = list(set(y))
+    lx = len(list(x))
+    ly = len(list(y))
     Px = []
     for xval in x_value_list:
-        Px.append( len(filter(lambda q:q==xval,x))/float(len(x)) )
+        # Px.append( len(filter(lambda q:q==xval,x))/float(lx) )
+        Px.append( len(list(filter(lambda q:q==xval,x)))/float(lx) )
     Py = []
     for yval in y_value_list:
-        Py.append( len(filter(lambda q:q==yval,y))/float(len(y)) )
+        # Py.append( len(filter(lambda q:q==yval,y))/float(ly) )
+        Py.append( len(list(filter(lambda q:q==yval,y)))/float(ly) )
 
-    for i in xrange(len(x_value_list)):
+    for i in range(len(x_value_list)):
         if Px[i] ==0.:
             continue
         sy = []
@@ -969,7 +978,8 @@ def _nmi(x, y):
             continue
         pxy = []
         for yval in y_value_list:
-            pxy.append( len(filter(lambda q:q==yval,sy))/float(len(y)) )
+            # pxy.append( len(filter(lambda q:q==yval,sy))/float(ly) )
+            pxy.append( len(list(filter(lambda q:q==yval,sy)))/float(ly) )
 
         t = []
         for j,q in enumerate(Py):
@@ -1025,10 +1035,12 @@ def compare_partitions(p1,p2):
             cross_tab[0][1] += l1 * common
             cross_tab[1][1] += l1 * l2
     [[a00, a01], [a10, a11]] = cross_tab
-
-    p1_vec = map(lambda x:x[1],sorted(p1.items(),key=lambda x:x[0]))
-    p2_vec = map(lambda x:x[1],sorted(p2.items(),key=lambda x:x[0]))
-
+    # print(p1)
+    # print(p2)
+    p1_vec = list(map(lambda x:x[1],sorted(p1.items(),key=lambda x:x[0])))
+    p2_vec = list(map(lambda x:x[1],sorted(p2.items(),key=lambda x:x[0])))
+    # p1_vec = list(p1_vec)[:]
+    # print(list(p1_vec)[:])
     return {
         'nmi': _nmi(p1_vec,p2_vec),
         'rand': float(a00 + a11) / (a00 + a01 + a10 + a11),
