@@ -523,7 +523,11 @@ def __one_level(graph, status, weight_key, resolution, randomize, model='ppm', p
                 v_loops  = graph.get_edge_data(node, node, default={weight_key: 0}).get(weight_key, 1)
                 com_in_degree = status.internals.get(com_node, 0.)
                 remove_cost = v_in_degree*__l2Epar2
-                remove_cost += com_in_degree * log(com_degree)
+                if com_degree>0.:
+                    remove_cost += com_in_degree * log(com_degree)
+                else:
+                    remove_cost += com_in_degree / __MIN
+
                 if com_degree > v_degree: remove_cost -= (com_in_degree - v_loops - v_in_degree) * log(com_degree - v_degree)
             elif model == 'ilfr':
                 com_degree = status.degrees.get(com_node, 0.)
