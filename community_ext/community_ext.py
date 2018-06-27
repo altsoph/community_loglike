@@ -995,7 +995,7 @@ def _nmi(x, y):
                 sum_mi += (pxy[j]*log( t[-1]) )
     eta_xy = _eta(x)*_eta(y)
     if eta_xy == 0.: return -1
-    return sum_mi/sqrt(_eta(x)*_eta(y))
+    return sum_mi/sqrt(_eta(x)*_eta(y)),2.*sum_mi/(_eta(x)+_eta(y))
 
 def compare_partitions(p1,p2):
     """Compute three metrics of two partitions similarity:
@@ -1034,7 +1034,7 @@ def compare_partitions(p1,p2):
             common = len(s1 & s2)
             l1 = len(s1) - common
             l2 = len(s2) - common
-            cross_tab[0][0] += common * common
+            cross_tab[0][0] += common * (common-1)
             cross_tab[1][0] += common * l2
             cross_tab[0][1] += l1 * common
             cross_tab[1][1] += l1 * l2
@@ -1045,8 +1045,10 @@ def compare_partitions(p1,p2):
     p2_vec = list(map(lambda x:x[1],sorted(p2.items(),key=lambda x:x[0])))
     # p1_vec = list(p1_vec)[:]
     # print(list(p1_vec)[:])
+    nmis = _nmi(p1_vec,p2_vec)
     return {
-        'nmi': _nmi(p1_vec,p2_vec),
+        'nmi': nmis[0],
+        'nmi_arithm': nmis[1],
         'rand': float(a00 + a11) / (a00 + a01 + a10 + a11),
         'jaccard' : float(a00) / (a01 + a10 + a00)
     }
