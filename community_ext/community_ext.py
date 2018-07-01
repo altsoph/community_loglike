@@ -994,7 +994,7 @@ def _nmi(x, y):
             if t[-1]>0:
                 sum_mi += (pxy[j]*log( t[-1]) )
     eta_xy = _eta(x)*_eta(y)
-    if eta_xy == 0.: return -1
+    if eta_xy == 0.: return 0.,0.
     return sum_mi/sqrt(_eta(x)*_eta(y)),2.*sum_mi/(_eta(x)+_eta(y))
 
 def compare_partitions(p1,p2):
