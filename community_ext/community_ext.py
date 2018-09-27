@@ -647,7 +647,7 @@ def __get_SUMDC2_P2in(status):
     DC = defaultdict(int)
     VC = defaultdict(int)
     for n,mn in status.rawnode2node.items():
-        DC[status.node2com[mn]] += status.rawnode2degree[n]
+        DC[status.node2com[mn]] += status.rawnode2degree.get(n,0)
         VC[status.node2com[mn]] += 1
     SUMDC2 = 0
     P2in = 0
