@@ -388,7 +388,7 @@ def induced_graph(partition, graph, weight="weight"):
         com1 = partition[node1]
         com2 = partition[node2]
         w_prec = ret.get_edge_data(com1, com2, {weight: 0}).get(weight, 1)
-        ret.add_edge(com1, com2, weight = w_prec + edge_weight)
+        ret.add_edge(com1, com2, **{weight: w_prec + edge_weight})
 
     return ret
 
@@ -638,7 +638,7 @@ def __get_es(status):
         Ein += status.internals.get(community, 0.)
         tmp = status.degrees.get(community, 0.)
         degrees_squared += tmp*tmp #status.degrees.get(community, 0.)**2
-    Eout = E - Ein
+    Eout = max(0.,E - Ein)
     return E,Ein,Eout,degrees_squared
 
 def __get_SUMDC2_P2in(status):
