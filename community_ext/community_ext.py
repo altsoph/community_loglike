@@ -997,7 +997,7 @@ def _nmi(x, y):
     if eta_xy == 0.: return 0.,0.
     return sum_mi/sqrt(_eta(x)*_eta(y)),2.*sum_mi/(_eta(x)+_eta(y))
 
-def compare_partitions(p1,p2):
+def compare_partitions(p1,p2,safe=True):
     """Compute three metrics of two partitions similarity:
       * Rand index
       * Jaccard index
@@ -1022,6 +1022,7 @@ def compare_partitions(p1,p2):
     >>> part2 = best_partition(G, model='dcppm', pars={'gamma':0.5})
     >>> compare_partitions(part1, part2)
     """
+    assert not set(p1.keys())^set(p2.keys()) or not safe, 'You tried to compare partitions with different numbers of nodes. Consider using safe=False flag for compare_partitions() call.'
     p1_sets = defaultdict(set)
     p2_sets = defaultdict(set)
     [p1_sets[item[1]].add(item[0]) for item in p1.items()]
