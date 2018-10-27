@@ -1047,10 +1047,17 @@ def compare_partitions(p1,p2,safe=True):
     # p1_vec = list(p1_vec)[:]
     # print(list(p1_vec)[:])
     nmis = _nmi(p1_vec,p2_vec)
-    return {
+    res = {
         'nmi': nmis[0],
         'nmi_arithm': nmis[1],
-        'rand': float(a00 + a11) / (a00 + a01 + a10 + a11),
-        'jaccard' : float(a00) / (a01 + a10 + a00)
     }
+    if (a00 + a01 + a10 + a11) == 0:
+        res['rand'] = 1.
+    else:
+        res['rand'] = float(a00 + a11) / (a00 + a01 + a10 + a11)
+    if (a01 + a10 + a00) == 0:
+        res['jaccard'] = 1.
+    else:
+        res['jaccard'] = float(a00) / (a01 + a10 + a00)
+    return res 
 
